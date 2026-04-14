@@ -90,6 +90,10 @@ Near-term milestones:
 4. Stand up minimal simulation scaffold for command response and derating behavior.
 5. Define first bench-test matrix for startup, steady-state, and fault handling.
 
+## Knowledge Migration
+
+- Article-derived subsystem migration notes: `docs/ARTICLE_KNOWLEDGE_MIGRATION_2026Q2.md`
+
 ## Licensing
 
 This repository uses a dual-license model:
