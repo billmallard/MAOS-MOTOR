@@ -93,6 +93,7 @@ Near-term milestones:
 ## Knowledge Migration
 
 - Article-derived subsystem migration notes: `docs/ARTICLE_KNOWLEDGE_MIGRATION_2026Q2.md`
+- Formal candidate shortlist and weighted trade matrix: `docs/MOTOR_CONTROLLER_TRADE_MATRIX.md`
 
 ## Licensing
 

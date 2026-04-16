@@ -38,13 +38,14 @@ Scope note: This is R&D guidance for Experimental Amateur-Built development. It 
 ## Open Decisions Assigned to MAOS-MOTOR
 
 - Finalize motor candidate shortlist with weighted criteria (mass, continuous kW, peak kW, thermal path, supplier maturity).
+- Add and evaluate magniX powertrain family as a formal candidate in the motor trade matrix.
 - Define controller redundancy strategy at motor-channel level (independent vs shared failure domains).
 - Establish measurable thermal derating policy and fault thresholds for SIL/HIL use.
 - Confirm altitude cooling requirements and required test instrumentation.
 
 ## Immediate Work Items
 
-1. Create a motor-controller trade matrix document in this repo with weighted scoring.
+1. Create a motor-controller trade matrix document in this repo with weighted scoring. (Done: `docs/MOTOR_CONTROLLER_TRADE_MATRIX.md`)
 2. Draft motor thermal limits and telemetry interface contract for MAOS-FCS and MAOS-ECS integration.
 3. Define bench test profile set: continuous cruise-equivalent load, repeated boost bursts, and fault-injection thermal recovery.
 4. Publish a v0 motor operating envelope artifact for system integration.
