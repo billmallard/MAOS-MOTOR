@@ -58,9 +58,9 @@ Purpose: identify candidates that can credibly hit or approach the MAOS cost tar
 |---|---|---|---|---:|---|---|
 | Hyper9 + Hyper9 HV (new) | NetGain Hyper9 AC-X1 kit | NetGain Hyper9 HV AC-X144 kit (run as generator) | ~90-120 kW class | **~11,000** (`$5,400 + $5,600`) | High | Closest off-the-shelf match to the `$10k + $10k` goal. Includes controllers in kit pricing. Lower power than HPDM-180 class. |
 | Hyper9 + used Hyper9 (mixed) | New Hyper9 kit | Used/refurb Hyper9 kit | ~90-120 kW class | **~8,000-11,000** | Medium | Strong budget option for prototype phase. Requires used-market screening and bench qualification. |
-| Tesla Model 3 rear DU + Hyper9 | Tesla M3 rear DU (`220 kW`, `88 kg`) | Hyper9 HV kit as generator | 120-220 kW class | **~15,500** (`$9,900 + $5,600`) | High | High propulsion headroom with budget generator. Heavier than aerospace-targeted motors. |
-| Tesla Model 3 rear DU + Tesla M3 rear DU | Tesla M3 rear DU | Tesla M3 rear DU (generator mode capable in principle) | 180-220+ kW class | **~19,800** | Medium | Attractive cost/power. Integration complexity and control strategy risk are high for aviation use. |
-| Tesla Model S LDU + Hyper9 HV | Tesla Model S LDU (`400 kW`, `295 lb`) | Hyper9 HV | 180-300+ kW class | **~17,500** (`$11,900 + $5,600`) | High | Very high power, but mass penalty is significant. Better fit for "go-fast" architecture than efficiency build. |
+| Tesla Model 3 rear DU + Hyper9 | Tesla M3 rear DU (`220 kW`, `88 kg`) + T-2C VCU | Hyper9 HV kit as generator | 120-220 kW class | **~18,199** (`$9,900 + $2,699 + $5,600`) | High | High propulsion headroom with budget generator. T-2C required for DU control. Heavier than aerospace-targeted motors. |
+| Tesla Model 3 rear DU + Tesla M3 rear DU | Tesla M3 rear DU + T-2C VCU | Tesla M3 rear DU + T-2C VCU (generator mode capable in principle) | 180-220+ kW class | **~25,198** (`2× ($9,900 + $2,699)`) | Medium | Attractive cost/power. Two T-2C units required (one per DU). Integration complexity and control strategy risk are high for aviation use. |
+| Tesla Model S LDU + Hyper9 HV | Tesla Model S LDU (`400 kW`, `295 lb`) + T-2C VCU | Hyper9 HV | 180-300+ kW class | **~20,199** (`$11,900 + $2,699 + $5,600`) | High | Very high power, but mass penalty is significant. T-2C required for LDU control. Better fit for "go-fast" architecture than efficiency build. |
 | AMR-250-90 + Hyper9 HV | AMR 250-90 (`210 hp peak`, `150 lb`) | Hyper9 HV | ~120-180 kW class | **~11,000** (`$5,400 sale + $5,600`) | Medium | Price is currently sale-sensitive. Good near-target cost if inventory remains available. |
 | EMRAX 228 + Hyper9 HV | EMRAX 228 (`75 kW cont`, `124 kW peak`) | Hyper9 HV | ~75-120 kW class | **~16,000-24,000** (est.) | Low | Strong mass and efficiency; cost likely above budget target without discount or used channel. |
 | HPDM-180R + HPDM-180R | H3X HPDM-180R | H3X HPDM-180R | `180 kW` class | **~40,000-80,000** (est.) | Low | Performance leader; cost out of target for budget track. Keep as premium reference. |
@@ -80,6 +80,42 @@ Purpose: identify candidates that can credibly hit or approach the MAOS cost tar
 - EV West Tesla Model S LDU starter kit: `$11,900`, up to `400 kW`, `295 lb`
 - EV West AMR 250-90 listing: `$10,900` list / `$5,400` sale, peak `210 HP`, `150 lb`
 - EMRAX 228 page: `75 kW` continuous, `124 kW` peak, `12.9-13.5 kg`
+- EV Controls T-2C VCU: `$2,699` per unit (EV West, 2026-04-22); one required per Tesla DU — see below
+
+---
+
+### Required Control Element: EV Controls T-2C for All Tesla Drive Units
+
+Any Tesla drive unit option in this matrix requires the **EV Controls T-2C Vehicle Control Unit** to be operable. The Tesla inverter firmware is proprietary and does not expose a standard external command interface without it. The T-2C reflashes the inverter firmware (one-time, locked to that specific DU serial number) and then provides the external control interface.
+
+**What the T-2C provides:**
+
+| Feature | Details |
+|---|---|
+| Command interface | Analog 0–5 V throttle input per DU — not a CAN torque command |
+| CAN telemetry output | `.dbc` file supplied; decodes RPM, power (kW), current, HV bus voltage, inverter temperatures, gear state |
+| Drive mode control | Drive / Neutral / Reverse via discrete inputs |
+| Accessory outputs | Contactor control, cooling fan, brake/regen lights, reverse light |
+| Connectivity | Bluetooth + Wi-Fi; EV-Controls Dash app (iOS) for configuration and data logging |
+| Weight | 0.5 kg |
+| Unit pricing | $2,699 (EV West, 2026-04-22) |
+| Compatibility | Model S/X large and small rear DU; Model 3 rear DU; dual-motor S/X P85/90/100D |
+
+**Critical constraint:** The T-2C firmware reflash is one-time and bound to a specific DU. A replacement inverter board requires a new T-2C purchase. Dual-DU configurations (B4, H-Budget-2) require **two T-2C units**.
+
+**Aviation-specific integration concerns:**
+
+| Concern | Detail | Severity |
+|---|---|---|
+| Analog command interface | MAOS FCS must drive a DAC (0–5 V) per DU rather than CAN torque commands; closed-loop motor control adds a DAC and ADC round-trip in the latency chain | Medium |
+| Command determinism | T-2C is an automotive VCU; state-transition timing and torque response latency are not characterized for flight control use | Medium — bench characterization required before closed-loop integration |
+| Firmware lock-to-DU | Replacement inverter board = new T-2C purchase ($2,699); plan accordingly for bench test attrition | Low (cost impact only) |
+| CAN telemetry adequacy | RPM, power, temps, HV bus available via `.dbc` — sufficient for MAOS motor telemetry requirements without additional bridge | Positive |
+| Fail-state behavior | T-2C fail-state (power loss, watchdog) must be characterized — does it fail to zero torque or hold last command? | Medium — required bench test item |
+
+**Net effect on integration risk:** Tesla options remain rated **High** integration risk until bench characterization of the T-2C analog command interface and fail-state behavior is complete. If bench data confirms deterministic response within MAOS FCS latency budget, risk can be revised to **Medium**. The T-2C makes the interface tractable; it does not make it proven for flight.
+
+All Tesla DU cost entries below have been updated to include `$2,699` T-2C per DU.
 
 ## Generator Strategy Notes (Low-Cost Track)
 
@@ -110,8 +146,8 @@ Purpose: identify candidates that can credibly hit or approach the MAOS cost tar
 |---|---|---|---:|---:|---:|---|---|---|---|
 | B1 | Hyper9 AC-X1 | Hyper9 HV AC-X144 | 5,400 | 5,600 | **11,000** | 90-120 kW | Medium | Medium | **Strong** |
 | B2 | Hyper9 AC-X1 | Hyper9 AC-X1 (used) | 5,400 | 2,500-5,400 | **7,900-10,800** | 90-120 kW | Medium | Medium | **Strong** |
-| B3 | Tesla M3 rear DU | Hyper9 HV AC-X144 | 9,900 | 5,600 | **15,500** | 120-220 kW | High | High | Acceptable |
-| B4 | Tesla M3 rear DU | Tesla M3 rear DU | 9,900 | 9,900 | **19,800** | 180-220+ kW | High | High | Acceptable |
+| B3 | Tesla M3 rear DU + T-2C | Hyper9 HV AC-X144 | 12,599 | 5,600 | **18,199** | 120-220 kW | High | High | Acceptable |
+| B4 | Tesla M3 rear DU + T-2C | Tesla M3 rear DU + T-2C | 12,599 | 12,599 | **25,198** | 180-220+ kW | High | High | Weak — cost now approaches premium territory |
 | B5 | AMR-250-90 | Hyper9 HV AC-X144 | 5,400-10,900 | 5,600 | **11,000-16,500** | 120-180 kW | High | Medium | Acceptable |
 | B6 | HPDM-180R | HPDM-180R | 20,000-40,000 | 20,000-40,000 | **40,000-80,000** | 180 kW | Low | Low | Weak |
 
@@ -129,8 +165,8 @@ Assumptions for quick estimate:
 | B2 | 7,900-10,800 | 90 | **88-120** |
 | B1 | 11,000 | 90 | **122** |
 | B5 | 11,000-16,500 | 120 | **92-138** |
-| B3 | 15,500 | 120 | **129** |
-| B4 | 19,800 | 180 | **110** |
+| B3 | 18,199 | 120 | **152** |
+| B4 | 25,198 | 180 | **140** |
 | B6 | 40,000-80,000 | 180 | **222-444** |
 
 ## Recommended Budget Shortlist (Current)
@@ -140,8 +176,10 @@ For immediate MAOS budget-track investigation:
 1. **B1 (Hyper9 + Hyper9 HV)**
 	- Best direct alignment with target cost and low procurement friction.
 	- Recommended first bench architecture for rapid integration learning.
-2. **B3 (Tesla M3 rear DU + Hyper9 HV)**
+2. **B3 (Tesla M3 rear DU + T-2C + Hyper9 HV)**
 	- Best cost/performance compromise for the 120-220 kW class.
+	- Updated cost $18,199 (was $15,500) — T-2C VCU is a required element, not optional.
+	- T-2C analog command interface (0–5 V throttle) must be bench-characterized for MAOS FCS latency compatibility before closed-loop integration.
 	- Recommended if speed target pushes above 170 KTAS and mass impact is acceptable.
 3. **B5 (AMR-250-90 + Hyper9 HV)**
 	- Attractive when sale pricing exists; check inventory volatility.
@@ -164,9 +202,9 @@ Current motor/generator pairings to run in parallel:
 
 | Path T Option | Generator Candidate | Propulsion Motor Candidate | Cost Anchor | Fit Summary |
 |---|---|---|---:|---|
-| T-Budget-1 | Hyper9 HV AC-X144 | Tesla Model 3 rear DU | **$15,500** | Best immediate budget/power compromise |
-| T-Budget-2 | Hyper9 HV AC-X144 | Tesla Model S LDU | **$17,500** | Max power headroom, high mass |
-| T-Budget-3 | Tesla M3 rear DU (gen mode) | Tesla M3 rear DU | **$19,800** | Symmetric architecture, control complexity |
+| T-Budget-1 | Hyper9 HV AC-X144 | Tesla Model 3 rear DU + T-2C | **$18,199** | Best immediate budget/power compromise; T-2C adds $2,699 vs. prior estimate |
+| T-Budget-2 | Hyper9 HV AC-X144 | Tesla Model S LDU + T-2C | **$20,199** | Max power headroom, high mass; T-2C adds $2,699 |
+| T-Budget-3 | Tesla M3 rear DU + T-2C (gen mode) | Tesla M3 rear DU + T-2C | **$25,198** | Symmetric architecture; two T-2C units required; control complexity high |
 | T-Premium | HPDM-350 | HPDM-350 | $40k-$80k+ | Best technical fit, high cost |
 
 ### Path H (Hayabusa Single/Twin)
@@ -179,8 +217,8 @@ Current motor/generator pairings to run in parallel:
 | Path H Option | Generator Candidate | Propulsion Motor Candidate | Cost Anchor | Fit Summary |
 |---|---|---|---:|---|
 | H-Budget-1 (single ICE) | Hyper9 HV AC-X144 | Hyper9 AC-X1 | **$11,000** | Closest to target economics |
-| H-Budget-2 (twin ICE) | 2x Hyper9 HV AC-X144 | Tesla Model 3 rear DU | **$21,100** | Redundancy plus speed headroom |
-| H-Budget-3 (single/twin ICE) | Hyper9 HV AC-X144 | Tesla Model 3 rear DU | **$15,500** | Strong compromise option |
+| H-Budget-2 (twin ICE) | 2x Hyper9 HV AC-X144 | Tesla Model 3 rear DU + T-2C | **$23,799** | Redundancy plus speed headroom; T-2C adds $2,699 |
+| H-Budget-3 (single/twin ICE) | Hyper9 HV AC-X144 | Tesla Model 3 rear DU + T-2C | **$18,199** | Strong compromise option; T-2C adds $2,699 vs. prior estimate |
 | H-Premium | 2x HPDM-180R | HPDM-180R | $60k-$120k | Technical benchmark only |
 
 ### Shared vs Path-Specific Work
